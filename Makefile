@@ -29,6 +29,16 @@ clean :
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 
+.PHONY : install
+
+install : $(TARGET)
+	cp -f $^ /usr/local/bin
+
+.PHONY : uninstall
+
+uninstall :
+	rm -f $/usr/local/bin/$(MK_NAME)
+
 # ========
 
 $(TARGET) : $(OBJS)
