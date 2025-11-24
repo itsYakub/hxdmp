@@ -38,9 +38,19 @@ int main(int ac, char **av) {
 
             while (*opt && *opt == '-') { opt++; }
             switch (*opt) {
-                case ('v'): { printf("%s: %.1f\n", *av, g_version); return (0); }
+                case ('v'): {
+                    if (strcmp(opt, "v") && strcmp(opt, "version")) {
+                        printf("%s: invalid option: %s\n", *av, av[i]); return (1);
+                    }
+                    
+                    printf("%s: %.1f\n", *av, g_version); return (0);
+                }
 
                 case ('h'): {
+                    if (strcmp(opt, "h") && strcmp(opt, "help")) {
+                        printf("%s: invalid option: %s\n", *av, av[i]); return (1);
+                    }
+
                     printf("USAGE: %s [ OPTIONS... ] [ FILE(s)... ]\n\n", *av);
                     printf("%s is a simple utility for inspecting file data on unix-like systems.\n\n", *av);
                     printf("OPTIONS:\n\n");
@@ -70,6 +80,9 @@ int main(int ac, char **av) {
                         !strcmp(opt, "length")
                     ) {
                         g_addrl = g_meml = value < 8 ? 8 : value;
+                    }
+                    else {
+                        printf("%s: invalid option: %s\n", *av, av[i]); return (1);
                     }
                 } break;
                 
