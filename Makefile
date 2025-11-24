@@ -6,7 +6,9 @@ MK_NAME		= hxdmp
 # ========
 
 CC			= cc
+CDBG		= gdb
 CFLAGS		= -Wall -Wextra -Werror -std=c99 -O2
+GFLAGS		= -O0 -ggdb3
 
 # ========
 
@@ -38,6 +40,13 @@ install : $(TARGET)
 
 uninstall :
 	rm -f $/usr/local/bin/$(MK_NAME)
+
+.PHONY : debug
+
+debug :
+	$(CC) $(GFLAGS) -o $(TARGET) $(SRCS)
+	$(CDBG) $(TARGET)
+	rm -f $(TARGET)
 
 # ========
 

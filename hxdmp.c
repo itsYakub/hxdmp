@@ -14,8 +14,12 @@
 /* SECTION: globals
  * */
 
-static size_t g_fcnt = 0;   /* count of files to be processed by the program */
-static size_t g_mlen = 16;  /* length of the bytes / row (default: 16 bytes / row) */
+static char  *g_licence = "GNU LESSER GENERAL PUBLIC LICENSE Version 3";
+static float  g_version = 1.0;  /* numerical representation of the program version */
+
+static size_t g_fcnt = 0;       /* count of files to be processed by the program */
+static size_t g_meml = 16;      /* length of the bytes / row (default: 16 bytes / row) */
+static size_t g_addrl = 16;     /* length of the displayed memory address (default: 16) */
 
 /* SECTION: function declarations
  * */
@@ -34,19 +38,39 @@ int main(int ac, char **av) {
 
             while (*opt && *opt == '-') { opt++; }
             switch (*opt) {
-                case ('h'): { printf("%s: help\n", *av); return (0); }
-                case ('v'): { printf("%s: 1.0\n", *av); return (0); }
+                case ('v'): { printf("%s: %.1f\n", *av, g_version); return (0); }
+
+                case ('h'): {
+                    printf("USAGE: %s [ OPTIONS... ] [ FILE(s)... ]\n\n", *av);
+                    printf("%s is a simple utility for inspecting file data on unix-like systems.\n\n", *av);
+                    printf("OPTIONS:\n\n");
+                    printf("    -h, --help                          display this help message and exit.\n");
+                    printf("    -v, --version                       display the version of the program and exit.\n");
+                    printf("    -l={arg}, --length={arg}            set the display length of 'Address' and 'Data' sections to {arg} (default: 16).\n");
+                    printf("              --length-memory={arg}     set the length of the displayed memory bytes in 'Data' sections to {arg} (default: 16).\n");
+                    printf("              --length-address={arg}    set the length of the displayed memory addresses in the 'Address' section to {arg} (default: 16).\n\n");
+                    printf("VERSION: %.1f\n", g_version);
+                    printf("LICENCE: %s\n", g_licence);
+                    return (0);
+                }
                 
                 case ('l'): {
                     char *arg = opt;
 
                     while (*arg && *arg != '=') { arg++; }
                     if (!*arg) { printf("%s: %s: misused argument option (--opt=arg)\n", *av, av[i]); return (1); }
-                    while (*arg && *arg == '=') { arg++; }
+                    while (*arg && *arg == '=') { *arg = 0, arg++; }
                     if (!*arg) { printf("%s: %s: missing argument value\n", *av, av[i]); return (1); }
 
-                    g_mlen = atoi(arg);
-                    if (g_mlen < 8) { g_mlen = 8; }
+                    int value = atoi(arg);
+                    if (!strcmp(opt, "length-address"))     { g_addrl = value < 8 ? 8 : value; }
+                    else if (!strcmp(opt, "length-memory")) { g_meml  = value < 8 ? 8 : value; }
+                    else if (
+                        !strcmp(opt, "l") ||
+                        !strcmp(opt, "length")
+                    ) {
+                        g_addrl = g_meml = value < 8 ? 8 : value;
+                    }
                 } break;
                 
                 default: {
@@ -70,6 +94,11 @@ int main(int ac, char **av) {
 
             int fd = open(av[i], O_RDONLY);
             if (fd == -1) { printf("%s: '%s':%s\n", *av, av[i], strerror(errno)); return (1); }
+
+            struct stat stat;
+            if (fstat(fd, &stat) == -1) { return (1); }
+            if (S_ISDIR(stat.st_mode)) { printf("%s: '%s': Is a directory\n", *av, av[i]); return (1); }
+
             if (hd_procfd(fd) == -1) { printf("%s: '%s':%s\n", *av, av[i], strerror(errno)); return (1); }
             if (close(fd) == -1) { printf("%s: '%s':%s\n", *av, av[i], strerror(errno)); return (1); }
             
@@ -93,36 +122,36 @@ extern int hd_procfd(const int fd) {
     /* print top frame...
      * */
     putchar('+');
-    for (size_t i = 0; i < 18; i++)             { putchar('-'); } putchar('+');
-    for (size_t i = 0; i < g_mlen * 3 + 1; i++) { putchar('-'); } putchar('+');
-    for (size_t i = 0; i < g_mlen + 2; i++)     { putchar('-'); } putchar('+');
+    for (size_t i = 0; i < g_addrl + 2; i++)    { putchar('-'); } putchar('+');
+    for (size_t i = 0; i < g_meml * 3 + 1; i++) { putchar('-'); } putchar('+');
+    for (size_t i = 0; i < g_meml + 2; i++)     { putchar('-'); } putchar('+');
     putchar('\n');
     
-    printf("|%-18s|%-*s|%-*s|\n",
-           " Address (hex):",
-           (int) g_mlen * 3 + 1, " Data (hex):",
-           (int) g_mlen + 2, " Data:"
+    printf("|%-*s|%-*s|%-*s|\n",
+           (int) g_addrl + 2, " Address (hex):",
+           (int) g_meml * 3 + 1, " Data (hex):",
+           (int) g_meml + 2, " Data:"
     );
 
     putchar('+');
-    for (size_t i = 0; i < 18; i++)             { putchar('-'); } putchar('+');
-    for (size_t i = 0; i < g_mlen * 3 + 1; i++) { putchar('-'); } putchar('+');
-    for (size_t i = 0; i < g_mlen + 2; i++)     { putchar('-'); } putchar('+');
+    for (size_t i = 0; i < g_addrl + 2; i++)    { putchar('-'); } putchar('+');
+    for (size_t i = 0; i < g_meml * 3 + 1; i++) { putchar('-'); } putchar('+');
+    for (size_t i = 0; i < g_meml + 2; i++)     { putchar('-'); } putchar('+');
     putchar('\n');
 
     /* print content frame... 
      * */
-    for (size_t i = 0; i < (size_t) stat.st_size; i += g_mlen) {
+    for (size_t i = 0; i < (size_t) stat.st_size; i += g_meml) {
         printf("| ");
-        printf("%016lx", i);
+        printf("%0*lx", (int) g_addrl ,i);
         printf(" | ");
 
-        for (size_t j = i; j < i + g_mlen; j++) {
+        for (size_t j = i; j < i + g_meml; j++) {
             printf("%02lx ", j < (size_t) stat.st_size ? (size_t) (data[j] & 0xff) : 0);
         }
         
         printf("| ");
-        for (size_t j = i; j < i + g_mlen; j++) {
+        for (size_t j = i; j < i + g_meml; j++) {
             printf("%c", j < (size_t) stat.st_size ? (isprint(data[j]) ? data[j] : '.') : '.');
         }
         
@@ -132,9 +161,9 @@ extern int hd_procfd(const int fd) {
     /* print bottom frame...
      * */
     putchar('+');
-    for (size_t i = 0; i < 18; i++)             { putchar('-'); } putchar('+');
-    for (size_t i = 0; i < g_mlen * 3 + 1; i++) { putchar('-'); } putchar('+');
-    for (size_t i = 0; i < g_mlen + 2; i++)     { putchar('-'); } putchar('+');
+    for (size_t i = 0; i < g_addrl + 2; i++)    { putchar('-'); } putchar('+');
+    for (size_t i = 0; i < g_meml * 3 + 1; i++) { putchar('-'); } putchar('+');
+    for (size_t i = 0; i < g_meml + 2; i++)     { putchar('-'); } putchar('+');
     putchar('\n');
 
     if (munmap(data, stat.st_size) == -1) { return (-1); }
