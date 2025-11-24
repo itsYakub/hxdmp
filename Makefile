@@ -18,6 +18,7 @@ SRCS		= $(MK_ROOT)$(MK_NAME).c
 # ========
 
 TARGET		= $(MK_ROOT)$(MK_NAME)
+TARGETDBG	= $(TARGET)-dbg
 
 # ========
 
@@ -44,9 +45,9 @@ uninstall :
 .PHONY : debug
 
 debug :
-	$(CC) $(GFLAGS) -o $(TARGET) $(SRCS)
-	$(CDBG) $(TARGET)
-	rm -f $(TARGET)
+	$(CC) $(GFLAGS) -o $(TARGETDBG) $(SRCS)
+	$(CDBG) $(TARGETDBG)
+	rm -f $(TARGETDBG)
 
 # ========
 
